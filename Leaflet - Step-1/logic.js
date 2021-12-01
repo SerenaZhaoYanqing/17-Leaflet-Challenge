@@ -5,7 +5,7 @@
 var queryUrl="https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
 var lineUrl="https://github.com/fraxen/tectonicplates/blob/master/GeoJSON/PB2002_plates.json";
 
-//**************************Part I Layers****************************
+//************************** Layers****************************
 
 //1. create all three layers (Refer W17.1.9 Activity step 1-7: Create multiple layers, set default display)
 //https://stackoverflow.com/questions/37166172/mapbox-tiles-and-leafletjs (mapbox id type)
@@ -64,22 +64,73 @@ L.control.layers(baseMaps, overlayMaps, {
   }).addTo(myMap);
  
   
-  //**************************Part II****************************
+  //**************************Markers****************************
 // Perform a GET request to the query URL
+d3.json(queryUrl).then(function(data) {
+    //creating function to determine size of markers based on value of the magnitute
+    function markerSize(mag){
+    // in case mag =0, 
+    if (mag ===0){
+        return 10;
+    }
+        return mag*10;
+    }
 
+// create  function to determine the color of the markers based on value of the magnitute
+//https://gis.stackexchange.com/questions/322535/custom-marker-colours-in-leaflet-based-on-attribute
+//https://www.color-hex.com/ (reference for color) //https://www.color-hex.com/color-palette/4699
 
+    function colorscale(mag){
+        switch(true){
+            case mag > 5:
+            return "#ff0000";
+            case mag > 4:
+            return "#ff4d00";
+            case mag > 3:
+            return "#ff7400";
+            case mag > 2:
+            return "#ffc100";
+            case mag > 0:
+            return "#baffc9";
+         }
+        }
+// finalise markers with above functions ( define size and color)
+        function finalMarkers(feature){
+            return{
+            fillOpacity: 0.75,
+            color: "#ffffff",
+            fillColor: colorscale(feature.properties.mag),
+            radius: markerSize(feature.properties.mag)   
+            }
 
-// d3.json(queryUrl).then(function(data) {
-//     // once we get a response , send data.features object to the  createFeatures function 
-//     createFeatures(data.features);
-//     });
+        }
+ 
+ // Perform a GET request to the query URL
+d3.json(queryUrl).then(function(data) {
+    // Once we get a response, send the data.features object to the createFeatures function
+    createFeatures(data.features);
+  });
+  
+  function createFeatures(earthquakeData) {
+  
+    // Define a function we want to run once for each feature in the features array
+    // Give each feature a popup describing the place and time of the earthquake
+    function onEachFeature(feature, layer) {
+      layer.bindPopup("<h3>" + feature.properties.place +
+        "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
+    }
+  
+    // Create a GeoJSON layer containing the features array on the earthquakeData object
+    // Run the onEachFeature function once for each piece of data in the array
+    //https://leafletjs.com/reference.html#marker
+    //https://leafletjs.com/reference.html#geojson-pointtolayer
+    var earthquakes = L.geoJSON(earthquakeData, {
+      onEachFeature: onEachFeature,
+      style: finalMarkers,
+      pointToLayer: function(feature, latlng) {
+        return L.circleMarker(latlng);}
+    }).addTo(earthquakes);
+    earthquakes.addTo(myMap);
 
-//     function createFeatures(earthquakeData)
-//     // define this function to run for each features in the feature array 
-//     // give each feature a pop up: describing place and time (convert the time format) of the earthquake 
-
-//     function onEachFeature(feature, layer) {
-//         layer.bindPopup("<h3>" + feature.properties.place +
-//           "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
-//       }
-
+  
+   
