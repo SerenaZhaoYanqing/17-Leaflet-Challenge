@@ -1,16 +1,16 @@
 
 // store our API  inside query url (all earthquakes in the last seven days/ all week  )
-var queryUrl="https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
+var queryUrl="https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
 //store tectonic plates API into line url 
-var lineUrl="https://github.com/fraxen/tectonicplates/blob/master/GeoJSON/PB2002_plates.json";
+var lineUrl="https://github.com/fraxen/tectonicplates/blob/master/GeoJSON/PB2002_plates.json"
 
  //************************** Layers****************************
 //Refer W17.1.9 Activity step 1-7: Create multiple layers, set default display)
 //https://stackoverflow.com/questions/37166172/mapbox-tiles-and-leafletjs (mapbox id type)
 
 // 1.Create two separate layer groups: one for earthquakes and one for tectonic plates
-var earthquakes = L.layerGroup();
-var tectonicplates = L.layerGroup();
+var earthquakes = new L.layerGroup();
+var tectonicplates = new L.layerGroup();
 // 2. create all three layers (
 var satellitemap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",{
     attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
@@ -47,10 +47,11 @@ var satellitemap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/til
   
   // 5.define a map object (default display, satellite and earthquakes )
   var myMap = L.map("map", {
-      center: [-25.27, 133.77],
+      center: [37.1,-95.8],
       zoom: 5,
-      layers: [satellitemap, earthquakes]
+      layers: [satellitemap, earthquakes,tectonicplates]
     });
+
   // 6. Pass our map layers into our layer control and add layer to the map 
   // 7. Add the layer control to the map
   L.control.layers(baseMaps, overlayMaps, {
@@ -70,6 +71,17 @@ d3.json(queryUrl),function(earthquakeData) {
     }
 
 // create  function to determine the color of the markers based on value of the magnitute
+
+// final style of markers ( define size and color, set two different function)
+        function finalMarkers(feature){
+            return{
+            fillOpacity: 0.75,
+            color: "#ffffff",
+            fillColor: colorscale(feature.properties.mag),
+            radius: markerSize(feature.properties.mag)   
+            };
+        }
+  
 //https://gis.stackexchange.com/questions/322535/custom-marker-colours-in-leaflet-based-on-attribute
 //https://www.color-hex.com/ (reference for color) //https://www.color-hex.com/color-palette/4699
 
@@ -87,48 +99,27 @@ function colorscale(mag){
       return "#baffc9";
    }
   }
-// final style of markers ( define size and color, set two different function)
-        function finalMarkers(feature){
-            return{
-            fillOpacity: 0.75,
-            color: "#ffffff",
-            fillColor: colorscale(feature.properties.mag),
-            radius: markerSize(feature.properties.mag)   
-            }
-        }
-      }
-
-
-
 
 // refer 17.1.10 activity 
- // Perform a GET request to the query URL 
-d3.json(queryUrl).then(function(earthquakeData) {
-    // Once we get a response, send the data.features object to the createFeatures function
-    createFeatures(earthquakeData.features);
-  })
-  
-  function createFeatures(earthquakeData) {
-    // Define a function we want to run once for each feature in the features array
-    // Give each feature a popup describing the place and time of the earthquake
-    function onEachFeature(feature, layer) {
-      layer.bindPopup("<h3>" + feature.properties.place +
-        "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
-    }
-    // Create a GeoJSON layer containing the features array on the earthquakeData object
-    // Run the onEachFeature function once for each piece of data in the array
-    //https://leafletjs.com/reference.html#marker
-    //https://leafletjs.com/reference.html#geojson-pointtolayer
-    var earthquakes = L.geoJSON(earthquakeData, {
-      onEachFeature: onEachFeature,
-      style: finalMarkers,
-      pointToLayer: function(feature, latlng) {
-        return L.circleMarker(latlng);
-      },
-    // add all data into earthquake layer groups 
-    }).addTo(earthquakes);
-    // add above layer into map 
-    earthquakes.addTo(myMap);
+
+L.geoJSON(earthquakeData, {
+  //https://leafletjs.com/reference.html#geojson-pointtolayer
+  //https://leafletjs.com/reference.html#marker
+  pointToLayer: function(feature, latlng) {
+      return L.circleMarker(latlng);
+  },
+  style: finalMarkers,
+  // Define a function we want to run once for each feature in the features array
+  // Give each feature a popup describing the place and time of the earthquake
+  onEachFeature: function(feature, layer) {
+      layer.bindPopup("<h3>Location: " + feature.properties.place + 
+      "</h3><hr><p>Date & Time: " + new Date(feature.properties.time) + 
+      "</p><hr><p>Magnitude: " + feature.properties.mag + "</p>");
+  }
+//  add all data into earthquake layer groups 
+}).addTo(earthquakes);
+// Add earthquakes Layer to the Map
+earthquakes.addTo(myMap);
 
 //geting tectonic plate geojson data (url)
 d3.json(lineUrl, function(tectonicdata){
@@ -155,5 +146,6 @@ d3.json(lineUrl, function(tectonicdata){
     };
     // Add Legend to the Map
     legend.addTo(myMap);
-  };
+  }; 
+  
   
