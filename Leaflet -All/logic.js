@@ -47,7 +47,8 @@ var satellitemap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/til
   
   // 5.define a map object (default display, satellite and earthquakes )
   var myMap = L.map("map", {
-      center: [37.1,-95.8],
+      //set  NY as center
+      center: [40.730610, -73.935242],
       zoom: 5,
       layers: [satellitemap, earthquakes,tectonicplates]
     });
